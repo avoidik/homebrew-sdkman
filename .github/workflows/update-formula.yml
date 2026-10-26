@@ -1,0 +1,51 @@
+name: Update formula
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest upstream versions
+        run: |
+          cli=$(gh release view --repo sdkman/sdkman-cli --json tagName -q .tagName)
+          native=$(gh release view --repo sdkman/sdkman-cli-native --json tagName -q .tagName)
+          echo "CLI=$cli" >> "$GITHUB_ENV"
+          echo "NATIVE=$native" >> "$GITHUB_ENV"
+
+      - name: Update formula
+        run: ruby .github/scripts/update_formula.rb "$CLI" "$NATIVE"
+
+      - name: Commit formula
+        run: |
+          git add Formula
+          if git diff --cached --quiet; then
+            echo "Formula is up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update sdkman-cli to $CLI and sdkman-cli-native to $NATIVE"
+          git push
+
+      - name: Create release
+        run: |
+          tag="cli-$CLI-native-$NATIVE"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists"
+            exit 0
+          fi
+          gh release create "$tag" \
+            --target "$(git rev-parse HEAD)" \
+            --title "sdkman-cli $CLI, sdkman-cli-native $NATIVE" \
+            --notes "Formula updated to [sdkman-cli $CLI](https://github.com/sdkman/sdkman-cli/releases/tag/$CLI) and [sdkman-cli-native $NATIVE](https://github.com/sdkman/sdkman-cli-native/releases/tag/$NATIVE)."

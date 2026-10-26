@@ -5,7 +5,7 @@ A Homebrew tap containing the Formula for the SDKMAN! CLI.
 ## Installation
 
 ```sh
-$ brew tap sdkman/tap
+$ brew tap avoidik/sdkman
 $ brew install sdkman-cli
 ```
 
@@ -26,6 +26,6 @@ The output should look similar to this
 
 ```sh
 SDKMAN!
-script: 5.18.2
-native: 0.4.6
+script: 5.24.0
+native: 0.8.0
 ```
